@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/popup_background"
+    android:padding="24dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:id="@+id/popupTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="INCOMING CALL IDENTIFIED"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="@color/warning" />
+
+        <ImageButton
+            android:id="@+id/dismissBtn"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_alignParentRight="true"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:scaleType="centerInside" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/popupIcon"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@android:drawable/ic_dialog_info"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/callerNameTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Unknown Caller"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/callerNumberTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+91 00000 00000"
+            android:textSize="18sp"
+            android:textColor="#94a3b8" />
+
+        <TextView
+            android:id="@+id/detailsTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Shield Verified"
+            android:textSize="14sp"
+            android:textColor="#64748b" />
+
+        <TextView
+            android:id="@+id/reportsTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 community reports"
+            android:textSize="12sp"
+            android:textColor="#475569"
+            android:layout_marginTop="2dp" />
+
+        <View
+            android:layout_width="100dp"
+            android:layout_height="1dp"
+            android:background="#1e293b"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:id="@+id/riskScoreTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="RISK SCORE: 50%"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/warning"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:background="@drawable/risk_score_pill_bg" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="24dp">
+
+        <Button
+            android:id="@+id/allowButton"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:text="Allow"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:layout_marginRight="4dp"
+            android:backgroundTint="#1e293b" />
+
+        <Button
+            android:id="@+id/blockButton"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:text="Block"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:layout_marginLeft="4dp"
+            android:layout_marginRight="4dp"
+            android:backgroundTint="#ef4444" />
+
+        <Button
+            android:id="@+id/reportButton"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:text="Report"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:layout_marginLeft="4dp"
+            android:backgroundTint="#06b6d4" />
+    </LinearLayout>
+</LinearLayout>

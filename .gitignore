@@ -1,0 +1,124 @@
+# ===========================
+# OSX
+# ===========================
+.DS_Store
+
+# ===========================
+# Xcode / iOS
+# ===========================
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+**/.xcode.env.local
+**/Pods/
+/vendor/bundle/
+ios/build/
+
+# ===========================
+# Android / IntelliJ
+# ===========================
+build/
+.idea
+.gradle
+local.properties
+*.iml
+*.hprof
+.cxx/
+*.keystore
+!debug.keystore
+.kotlin/
+
+# Android build outputs - These are GENERATED files.
+# Never commit these. They are rebuilt automatically on each machine.
+android/app/build/
+android/build/
+android/.gradle/
+android/app/.cxx/
+
+# Pre-bundled JS assets - ROOT CAUSE of stale screens.
+# This folder is auto-generated when you run `react-native bundle`.
+# It should NEVER be committed so each device always gets a fresh bundle.
+android/app/src/main/assets/index.android.bundle
+android/app/src/main/assets/index.android.bundle.map
+android/app/src/main/assets/*.bundle
+android/app/src/main/assets/*.map
+
+# ===========================
+# Metro Bundler Cache
+# ===========================
+.metro-health-check*
+
+# ===========================
+# Node.js
+# ===========================
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ===========================
+# Bundle Artifacts
+# ===========================
+*.jsbundle
+*.jsbundle.map
+
+# ===========================
+# Fastlane
+# ===========================
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots
+**/fastlane/test_output
+
+# ===========================
+# Testing
+# ===========================
+/coverage
+
+# ===========================
+# Yarn
+# ===========================
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# SQLite local dev database
+auth.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+# Temporary uploads
+uploads/
+tmp_apks/
+*.db
+
+# Include .env configuration files for database connections
+!.env
+
+
+
+

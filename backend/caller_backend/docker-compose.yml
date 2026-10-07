@@ -1,0 +1,22 @@
+# caller_backend/docker-compose.yml
+version: '3.8'
+
+services:
+  unified-backend:
+    build: .
+    container_name: aepttas_unified_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=127.0.0.1
+      - DB_PORT=5432
+      - DB_NAME=aepttas_xdr
+      - DB_SCHEMA=apt
+      - DB_USER=apt_callmgmt_app
+      - DB_PASSWORD=Call@intern_aepttas
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

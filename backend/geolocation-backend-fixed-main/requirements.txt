@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+pydantic-settings
+python-multipart
+requests
+google-auth
+google-play-scraper
+androguard
+python-dotenv
+anthropic
+scikit-learn
+joblib
+numpy
+pandas
+psycopg2-binary

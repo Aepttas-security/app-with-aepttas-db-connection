@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment variables
+.env
+
+# Databases
+*.db
+*.sqlite3
+
+# Temporary files
+tmp_apks/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log

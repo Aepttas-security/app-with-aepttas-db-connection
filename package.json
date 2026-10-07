@@ -1,0 +1,54 @@
+{
+  "name": "com.aepttas.shield",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Build complete'",
+    "android": "node scripts/start-backends.js && react-native run-android",
+    "ios": "react-native run-ios",
+    "lint": "eslint .",
+    "start": "node scripts/start-backends.js && react-native start",
+    "start:metro": "react-native start",
+    "start:backend": "node scripts/start-server.js",
+    "start:dev": "node scripts/start-backends.js && react-native start",
+    "start:web": "python -m uvicorn caller_backend.main:app --host 0.0.0.0 --port 5000",
+    "start:backends": "node scripts/start-backends.js",
+    "stop": "node scripts/stop-backends.js",
+    "stop:backends": "node scripts/stop-backends.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "@react-native/new-app-screen": "0.86.0",
+    "react": "19.2.3",
+    "react-native": "0.86.0",
+    "react-native-fs": "^2.20.0",
+    "react-native-linear-gradient": "^2.8.3",
+    "react-native-maps": "^1.29.0",
+    "react-native-safe-area-context": "^5.5.2",
+    "react-native-svg": "^15.15.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.3",
+    "@babel/runtime": "^7.25.0",
+    "@react-native-community/cli": "^20.2.0",
+    "@react-native-community/cli-platform-android": "20.1.0",
+    "@react-native-community/cli-platform-ios": "^20.2.0",
+    "@react-native/babel-preset": "0.86.0",
+    "@react-native/eslint-config": "0.86.0",
+    "@react-native/metro-config": "0.86.0",
+    "@react-native/typescript-config": "0.86.0",
+    "@types/jest": "^29.5.13",
+    "@types/react": "^19.2.0",
+    "@types/react-test-renderer": "^19.1.0",
+    "eslint": "^8.19.0",
+    "jest": "^29.6.3",
+    "prettier": "2.8.8",
+    "react-test-renderer": "19.2.3",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">= 22.11.0"
+  }
+}
