@@ -16,6 +16,7 @@ import { useAppTheme } from '../contexts/ThemeContext';
 import { Icon } from '../components/Icon';
 import { ParentalRepository } from '../data/parentalRepository';
 import { Storage } from '../utils/storage';
+import { telemetryWorker } from '../services/TelemetryService';
 
 interface ChildLinkScreenProps {
   onBack: () => void;
@@ -136,10 +137,21 @@ export const ChildLinkScreen: React.FC<ChildLinkScreenProps> = ({
         appUsage: [],
       };
 
+      if (response?.pairing_id) {
+        await Storage.setPairingId(response.pairing_id);
+      }
       await Storage.setChildId(childId);
       await Storage.setLinkedChild(newChildProfile);
       await Storage.setAssignedRole('CHILD');
       await Storage.setIsExistingUser(true);
+
+      // Immediately start background location telemetry and app usage sync
+      try {
+        await telemetryWorker.start();
+      } catch (workerErr) {
+        console.warn('Telemetry worker start warning:', workerErr);
+      }
+
       onLinkSuccess();
     } catch (err: any) {
       setErrorMessage(err?.message || 'Invalid Linking Code. Please check the code and try again.');

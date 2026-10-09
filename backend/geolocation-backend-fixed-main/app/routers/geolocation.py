@@ -45,6 +45,7 @@ class NearbyRequest(BaseModel):
     radius_km: float = 5
 
 @router.post("/api/v1/geolocation/current")
+@router.post("/api/v1/geolocation/save")
 async def store_location(
     location: LocationData,
     request: Request,
@@ -72,6 +73,12 @@ async def store_location(
                 "is_mock_location": result.get("is_mock_location"),
                 "speed_kmh": result.get("speed_kmh"),
                 "record_id": result.get("record_id"),
+                "city": result.get("city"),
+                "country": result.get("country"),
+                "address": result.get("address"),
+                "accuracy": result.get("accuracy"),
+                "provider": result.get("provider"),
+                "isp": result.get("isp"),
             },
         }
     except Exception as e:

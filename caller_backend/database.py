@@ -52,7 +52,7 @@ try:
         connect_args=connect_args
     )
 except Exception as e:
-    logger.warning(f"Initial engine setup warning: {e}")
+    logger.warning("Initial database engine pool setup failed, falling back to basic connection.")
     engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

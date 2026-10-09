@@ -79,6 +79,10 @@ class LocationData(BaseModel):
     attributes: Optional[Dict[str, Any]] = {}
     raw_provider_flags: Optional[Dict[str, Any]] = None
     created_by: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+    address: Optional[str] = None
+    isp: Optional[str] = None
 
 class NearbyRequest(BaseModel):
     latitude: float

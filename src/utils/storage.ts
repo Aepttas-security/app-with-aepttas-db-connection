@@ -134,6 +134,14 @@ export const Storage = {
     return await getStored('child_id');
   },
 
+  async setPairingId(pairingId: string | number): Promise<void> {
+    await setStored('pairing_id', String(pairingId));
+  },
+
+  async getPairingId(): Promise<string> {
+    return await getStored('pairing_id');
+  },
+
   async setLinkedChild(childData: any): Promise<void> {
     if (!childData) {
       await setStored('linked_child', '');

@@ -69,13 +69,14 @@ if (fs.existsSync(callerBackendDir)) {
 
 // Configure ADB reverse port forwarding for Android devices / emulators
 try {
-  const ports = [5000, 8081];
+  const ports = [5000, 8081, 8003];
   ports.forEach((p) => {
     try {
       execSync(`adb reverse tcp:${p} tcp:${p}`, { stdio: 'ignore' });
     } catch {}
   });
-  console.log('🔌 ADB reverse port forwarding configured for ports (5000, 8081)');
+  console.log('🔌 ADB reverse port forwarding configured for ports (5000, 8081, 8003)');
+
 } catch (e) {
   // ADB not connected or not in PATH, non-critical
 }

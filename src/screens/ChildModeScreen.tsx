@@ -21,6 +21,7 @@ import { colors } from '../styles/theme';
 import { Icon } from '../components/Icon';
 import { Storage } from '../utils/storage';
 import { ParentalRepository } from '../data/parentalRepository';
+import { telemetryWorker } from '../services/TelemetryService';
 
 interface ChildModeScreenProps {
   onUnlink: () => void;
@@ -48,6 +49,7 @@ export const ChildModeScreen: React.FC<ChildModeScreenProps> = ({ onUnlink }) =>
       }
     }
     loadChildName();
+    telemetryWorker.start().catch((e: any) => console.warn('ChildMode telemetry worker start:', e));
   }, []);
 
   // 3-second long-press SOS State
@@ -215,8 +217,10 @@ export const ChildModeScreen: React.FC<ChildModeScreenProps> = ({ onUnlink }) =>
           await ParentalRepository.unlinkChildDevice(cId);
         }
       } catch (e) {}
+      telemetryWorker.stop();
       await Storage.setLinkedChild(null);
       await Storage.setChildId('');
+      await Storage.setPairingId('');
       onUnlink();
     } else {
       setPinError('Invalid Unlink Code. Please enter the valid 6-digit code.');

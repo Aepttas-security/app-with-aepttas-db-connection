@@ -237,10 +237,6 @@ export function useParentalControl() {
           childList = (childList as any)?.data || (childList as any)?.children || [];
         }
 
-        if (parentEmail) {
-          childList = childList.filter((c: any) => !c.parent_email || c.parent_email.trim().toLowerCase() === parentEmail);
-        }
-
         const mappedChildren = (Array.isArray(childList) ? childList : []).map((c: any, index: number) => {
           const isLinked = hasBackendLinked || String(c.status || '').toUpperCase() === 'LINKED' || c.is_device_linked === true || c.is_active_online === true;
           return {
@@ -265,16 +261,16 @@ export function useParentalControl() {
 
         const activeLinked = (storedLinkedChild && String(storedLinkedChild.status || '').toUpperCase() === 'LINKED')
           ? storedLinkedChild
-          : (linkCheck.linked_child && String(linkCheck.linked_child.status || '').toUpperCase() === 'LINKED' ? linkCheck.linked_child : null);
+          : (linkCheck.linked_child && (hasBackendLinked || String(linkCheck.linked_child.status || '').toUpperCase() === 'LINKED') ? linkCheck.linked_child : null);
 
         if (activeLinked) {
           const matchIdx = mappedChildren.findIndex(
-            (c: any) => String(c.id) === String(activeLinked.id) || c.name.toLowerCase() === activeLinked.name.toLowerCase()
+            (c: any) => String(c.id) === String(activeLinked.id || activeLinked.child_id) || (c.name && activeLinked.name && c.name.toLowerCase() === activeLinked.name.toLowerCase())
           );
           if (matchIdx >= 0) {
-            mappedChildren[matchIdx] = { ...mappedChildren[matchIdx], ...activeLinked, status: 'LINKED', is_device_linked: true };
+            mappedChildren[matchIdx] = { ...mappedChildren[matchIdx], ...activeLinked, status: 'LINKED', is_device_linked: true, permissions_granted: true };
           } else {
-            mappedChildren.unshift({ ...activeLinked, status: 'LINKED', is_device_linked: true });
+            mappedChildren.unshift({ ...activeLinked, status: 'LINKED', is_device_linked: true, permissions_granted: true });
           }
         }
 

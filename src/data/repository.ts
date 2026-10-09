@@ -208,7 +208,7 @@ export const DashboardRepository = {
 
 export const GeolocationRepository = {
   async getCurrentLocation(): Promise<any> {
-    const response = await fetch(`${getGeoUrl()}/current`);
+    const response = await fetch(`${getGeoUrl()}/api/v1/geolocation/current`);
     if (!response.ok) throw new Error('Failed to retrieve current location.');
     return response.json();
   },
@@ -222,8 +222,14 @@ export const GeolocationRepository = {
     provider?: string;
     timestamp?: string;
     device_id?: string;
+    platform?: string;
+    mock_location_reasons?: string[];
+    city?: string;
+    country?: string;
+    address?: string;
+    isp?: string;
   }): Promise<any> {
-    const response = await fetch(`${getGeoUrl()}/current`, {
+    const response = await fetch(`${getGeoUrl()}/api/v1/geolocation/current`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -235,22 +241,22 @@ export const GeolocationRepository = {
   },
 
   async getLocationHistory(): Promise<any[]> {
-    const response = await fetch(`${getGeoUrl()}/history`);
+    const response = await fetch(`${getGeoUrl()}/api/v1/geolocation/history`);
     if (!response.ok) throw new Error('Failed to retrieve location history.');
     const json = await response.json();
     return json.history || [];
   },
 
   async deleteHistoryEntry(): Promise<any> {
-    const response = await fetch(`${getGeoUrl()}/history`, {
+    const response = await fetch(`${getGeoUrl()}/api/v1/geolocation/history`, {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to clear location history.');
     return response.json();
   },
 
-  async getNearbyPlaces(payload: { latitude: number; longitude: number; radius_km: number }): Promise<any[]> {
-    const response = await fetch(`${getGeoUrl()}/nearby`, {
+  async getNearbyPlaces(payload: { latitude: number; longitude: number; radius_km?: number }): Promise<any[]> {
+    const response = await fetch(`${getGeoUrl()}/api/v1/geolocation/nearby`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -262,3 +268,4 @@ export const GeolocationRepository = {
     return json.places || [];
   }
 };
+

@@ -38,6 +38,26 @@ public class LocationModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void startTelemetryService(Promise promise) {
+        try {
+            com.aepttas.shield.services.LocationTelemetryService.startService(reactContext);
+            promise.resolve(true);
+        } catch (Exception e) {
+            promise.reject("SERVICE_ERROR", e.getMessage());
+        }
+    }
+
+    @ReactMethod
+    public void stopTelemetryService(Promise promise) {
+        try {
+            com.aepttas.shield.services.LocationTelemetryService.stopService(reactContext);
+            promise.resolve(true);
+        } catch (Exception e) {
+            promise.reject("SERVICE_ERROR", e.getMessage());
+        }
+    }
+
+    @ReactMethod
     public void isLocationEnabled(Promise promise) {
         try {
             LocationManager lm = (LocationManager) reactContext.getSystemService(Context.LOCATION_SERVICE);

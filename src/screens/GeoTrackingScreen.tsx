@@ -91,33 +91,15 @@ const mapBackendRecordToGeoRequest = (rec: any): GeoRequest => {
   };
 };
 
-const getNearbyPlaces = (ip: string): NearbyPlace[] => {
-  if (ip.startsWith('185.')) {
-    return [
-      { name: 'Amsterdam AMS-IX Node', distance: '1.2 km' },
-      { name: 'Equinix AM3 Data Center', distance: '3.4 km' },
-      { name: 'Leaseweb Gateway Node B', distance: '5.1 km' }
-    ];
-  } else if (ip.startsWith('104.')) {
-    return [
-      { name: 'San Francisco SF-MIX Exchange', distance: '0.8 km' },
-      { name: 'Digital Realty SF Data Center', distance: '2.1 km' },
-      { name: 'Cloudflare SF Edge Server 12', distance: '4.3 km' }
-    ];
-  } else if (ip.startsWith('43.')) {
-    return [
-      { name: 'Mumbai GPX Data Center', distance: '1.9 km' },
-      { name: 'Nxtra Airtel Exchange Mumbai', distance: '3.0 km' },
-      { name: 'AWS Mumbai Edge Region', distance: '6.2 km' }
-    ];
-  } else {
-    return [
-      { name: 'Carrier Telecom Exchange Node', distance: '2.5 km' },
-      { name: 'Central ISP Gateway Routing', distance: '4.8 km' },
-      { name: 'Local Edge DNS Cache', distance: '7.1 km' }
-    ];
-  }
+const getNearbyPlaces = (ip: string, city?: string): NearbyPlace[] => {
+  const area = city && !city.includes('Node') && city !== 'Detected City' ? `${city} ` : '';
+  return [
+    { name: `${area}Medical Center`, distance: '0.8 km' },
+    { name: `${area}Police Patrol Post`, distance: '1.2 km' },
+    { name: `${area}Civil Safe Haven Hub`, distance: '1.7 km' }
+  ];
 };
+
 
 export const GeoTrackingScreen: React.FC<GeoTrackingScreenProps> = ({ onBack }) => {
   const { colors, mode, toggleTheme } = useAppTheme();
@@ -246,17 +228,18 @@ export const GeoTrackingScreen: React.FC<GeoTrackingScreenProps> = ({ onBack }) 
               }))
             );
           } else if (isMounted) {
-            setDynamicNearbyPlaces(getNearbyPlaces(selectedRequest.ip));
+            setDynamicNearbyPlaces(getNearbyPlaces(selectedRequest.ip, selectedRequest.city));
           }
         })
         .catch(() => {
           if (isMounted) {
-            setDynamicNearbyPlaces(getNearbyPlaces(selectedRequest.ip));
+            setDynamicNearbyPlaces(getNearbyPlaces(selectedRequest.ip, selectedRequest.city));
           }
         });
     } else {
-      setDynamicNearbyPlaces(getNearbyPlaces(selectedRequest.ip));
+      setDynamicNearbyPlaces(getNearbyPlaces(selectedRequest.ip, selectedRequest.city));
     }
+
 
     return () => {
       isMounted = false;

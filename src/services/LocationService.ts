@@ -1,4 +1,5 @@
 import { NativeModules, PermissionsAndroid, Platform } from 'react-native';
+import Geolocation from 'react-native-geolocation-service';
 import { GeolocationRepository } from '../data/repository';
 
 export interface UserLiveLocation {
@@ -64,37 +65,98 @@ class LocationService {
   }
 
   /**
+   * Obtains live GPS position using react-native-geolocation-service with enableHighAccuracy: true
+   */
+  private getGpsViaGeolocationService(): Promise<{
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+    speed?: number;
+    altitude?: number;
+    provider?: string;
+    isMock?: boolean;
+    timestamp?: number;
+  }> {
+    return new Promise((resolve, reject) => {
+      Geolocation.getCurrentPosition(
+        (pos) => {
+          const isMock = Boolean((pos as any)?.mocked || (pos as any)?.isFromMockProvider);
+          resolve({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy || 10,
+            speed: pos.coords.speed || 0,
+            altitude: pos.coords.altitude || 0,
+            provider: 'GPS',
+            isMock,
+            timestamp: pos.timestamp,
+          });
+        },
+        (err) => {
+          reject(err);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 5000,
+          showLocationDialog: true,
+          forceRequestLocation: true,
+        }
+      );
+    });
+  }
+
+  /**
    * Detects the user's actual live location:
-   * 1. Attempts Native GPS/Network location fix with mock detection.
-   * 2. Enriches native coordinates with reverse geocoding & ISP/IP.
-   * 3. Falls back seamlessly to IP-based Geolocation if GPS is unavailable / denied / indoors.
+   * 1. Uses react-native-geolocation-service with enableHighAccuracy: true.
+   * 2. Falls back to Android native LocationModule (hardware GPS provider).
+   * 3. Enriches native coordinates with reverse geocoding & ISP/IP.
    * 4. Syncs the live detected coordinate with the backend Geolocation repository.
+   * 5. Does NOT use hardcoded Bangalore coordinates as the actual location!
    */
   async detectLiveLocation(): Promise<UserLiveLocation> {
-    let nativeResult: any = null;
+    let gpsResult: any = null;
+    const hasPermission = await this.requestLocationPermission();
 
-    // 1. Try Native Android Location Module
-    if (Platform.OS === 'android' && LocationModule?.getCurrentLocation) {
-      const hasPermission = await this.requestLocationPermission();
-      if (hasPermission) {
-        try {
-          nativeResult = await LocationModule.getCurrentLocation();
-          console.log('[LocationService] Native GPS location acquired:', nativeResult);
-        } catch (nativeErr) {
-          console.log('[LocationService] Native location unavailable, using IP fallback:', nativeErr);
+    // 1. Primary: Try react-native-geolocation-service with high accuracy
+    if (hasPermission) {
+      try {
+        gpsResult = await this.getGpsViaGeolocationService();
+        console.log('[LocationService] Live GPS acquired via react-native-geolocation-service:', gpsResult);
+      } catch (geoErr) {
+        console.log('[LocationService] react-native-geolocation-service notice, trying native LocationModule:', geoErr);
+      }
+    }
+
+    // 2. Secondary fallback: Native Android LocationModule (hardware GPS / network listener)
+    if (!gpsResult && hasPermission && Platform.OS === 'android' && LocationModule?.getCurrentLocation) {
+      try {
+        const native = await LocationModule.getCurrentLocation();
+        if (native && typeof native.latitude === 'number' && typeof native.longitude === 'number') {
+          gpsResult = {
+            latitude: native.latitude,
+            longitude: native.longitude,
+            accuracy: native.accuracy || 10,
+            speed: native.speed || 0,
+            provider: native.provider ? native.provider.toUpperCase() : 'GPS',
+            isMock: Boolean(native.isMock),
+            timestamp: native.timestamp || Date.now(),
+          };
+          console.log('[LocationService] Live GPS acquired via LocationModule:', gpsResult);
         }
+      } catch (nativeErr) {
+        console.log('[LocationService] Native LocationModule notice:', nativeErr);
       }
     }
 
     let detected: UserLiveLocation;
 
-    if (nativeResult && typeof nativeResult.latitude === 'number' && typeof nativeResult.longitude === 'number') {
-      // We got genuine hardware GPS / cellular network coordinates
-      const lat = nativeResult.latitude;
-      const lon = nativeResult.longitude;
-      const isMock = Boolean(nativeResult.isMock);
+    if (gpsResult && typeof gpsResult.latitude === 'number' && typeof gpsResult.longitude === 'number') {
+      const lat = gpsResult.latitude;
+      const lon = gpsResult.longitude;
+      const isMock = Boolean(gpsResult.isMock);
 
-      // Resolve human-readable place name & network details
+      // Resolve human-readable place name & network details dynamically
       const meta = await this.enrichCoordinates(lat, lon);
 
       detected = {
@@ -102,31 +164,32 @@ class LocationService {
         longitude: lon,
         latitudeStr: `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'}`,
         longitudeStr: `${Math.abs(lon).toFixed(4)}° ${lon >= 0 ? 'E' : 'W'}`,
-        accuracy: Math.round(nativeResult.accuracy || 10),
-        city: meta.city || 'Detected City',
-        region: meta.region || 'Detected Region',
-        country: meta.country || 'Detected Country',
-        countryCode: meta.countryCode || 'IN',
+        accuracy: Math.round(gpsResult.accuracy || 10),
+        city: meta.city || `Live Location (${Math.abs(lat).toFixed(2)}°)`,
+        region: meta.region || 'Active Region',
+        country: meta.country || 'Detected Region',
+        countryCode: meta.countryCode || '',
         isp: meta.isp || 'Mobile Cellular / GPS',
         ip: meta.ip || '127.0.0.1',
-        provider: nativeResult.provider ? nativeResult.provider.toUpperCase() : 'GPS',
+        provider: gpsResult.provider || 'GPS',
         isMock,
         threatLevel: isMock ? 'High Risk' : 'Safe',
         timestamp: new Date().toISOString(),
-        source: nativeResult.provider === 'network' ? 'network' : 'native_gps',
+        source: 'native_gps',
       };
     } else {
-      // 2. Fallback to live IP-based geolocation lookup
+      // 3. Fallback to live IP-based geolocation lookup (dynamic, NOT hardcoded Bangalore)
       detected = await this.fetchIpLocationFallback();
     }
 
-    // 3. Sync detected live location with the backend server
+    // 4. Sync detected live location with the backend server via POST /api/v1/geolocation/current
     this.syncWithBackend(detected).catch(err => {
       console.log('[LocationService] Backend sync notice:', err);
     });
 
     return detected;
   }
+
 
   /**
    * Enriches GPS coordinates with human-readable location name & IP info
@@ -214,7 +277,7 @@ class LocationService {
   }
 
   /**
-   * Fast IP-based geolocation fallback when GPS hardware fix is not available
+   * Fast IP-based geolocation fallback when GPS hardware fix is not available yet
    */
   private async fetchIpLocationFallback(): Promise<UserLiveLocation> {
     // Attempt 1: ipapi.co
@@ -226,30 +289,32 @@ class LocationService {
 
       if (res.ok) {
         const data = await res.json();
-        const lat = parseFloat(data.latitude) || 12.9716;
-        const lon = parseFloat(data.longitude) || 77.5946;
+        const lat = parseFloat(data.latitude);
+        const lon = parseFloat(data.longitude);
 
-        return {
-          latitude: lat,
-          longitude: lon,
-          latitudeStr: `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'}`,
-          longitudeStr: `${Math.abs(lon).toFixed(4)}° ${lon >= 0 ? 'E' : 'W'}`,
-          accuracy: 50,
-          city: data.city || 'Bengaluru',
-          region: data.region || 'Karnataka',
-          country: data.country_name || 'India',
-          countryCode: data.country_code || 'IN',
-          isp: data.org || data.asn || 'Broadband ISP',
-          ip: data.ip || '104.28.19.1',
-          provider: 'IP GEOLOCATION',
-          isMock: false,
-          threatLevel: 'Safe',
-          timestamp: new Date().toISOString(),
-          source: 'ip_lookup',
-        };
+        if (!isNaN(lat) && !isNaN(lon)) {
+          return {
+            latitude: lat,
+            longitude: lon,
+            latitudeStr: `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'}`,
+            longitudeStr: `${Math.abs(lon).toFixed(4)}° ${lon >= 0 ? 'E' : 'W'}`,
+            accuracy: 50,
+            city: data.city || 'Detected City',
+            region: data.region || 'Detected Region',
+            country: data.country_name || 'Detected Country',
+            countryCode: data.country_code || '',
+            isp: data.org || data.asn || 'Broadband ISP',
+            ip: data.ip || '127.0.0.1',
+            provider: 'IP GEOLOCATION',
+            isMock: false,
+            threatLevel: 'Safe',
+            timestamp: new Date().toISOString(),
+            source: 'ip_lookup',
+          };
+        }
       }
     } catch (err) {
-      console.log('[LocationService] ipapi.co failed, trying freeipapi:', err);
+      console.log('[LocationService] ipapi.co notice, trying freeipapi:', err);
     }
 
     // Attempt 2: freeipapi.com
@@ -261,50 +326,52 @@ class LocationService {
 
       if (res.ok) {
         const data = await res.json();
-        const lat = parseFloat(data.latitude) || 12.9716;
-        const lon = parseFloat(data.longitude) || 77.5946;
+        const lat = parseFloat(data.latitude);
+        const lon = parseFloat(data.longitude);
 
-        return {
-          latitude: lat,
-          longitude: lon,
-          latitudeStr: `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'}`,
-          longitudeStr: `${Math.abs(lon).toFixed(4)}° ${lon >= 0 ? 'E' : 'W'}`,
-          accuracy: 100,
-          city: data.cityName || 'Bengaluru',
-          region: data.regionName || 'Karnataka',
-          country: data.countryName || 'India',
-          countryCode: data.countryCode || 'IN',
-          isp: 'Internet Gateway',
-          ip: data.ipAddress || '104.28.19.1',
-          provider: 'IP GEOLOCATION',
-          isMock: false,
-          threatLevel: 'Safe',
-          timestamp: new Date().toISOString(),
-          source: 'ip_lookup',
-        };
+        if (!isNaN(lat) && !isNaN(lon)) {
+          return {
+            latitude: lat,
+            longitude: lon,
+            latitudeStr: `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'}`,
+            longitudeStr: `${Math.abs(lon).toFixed(4)}° ${lon >= 0 ? 'E' : 'W'}`,
+            accuracy: 100,
+            city: data.cityName || 'Detected City',
+            region: data.regionName || 'Detected Region',
+            country: data.countryName || 'Detected Country',
+            countryCode: data.countryCode || '',
+            isp: 'Internet Gateway',
+            ip: data.ipAddress || '127.0.0.1',
+            provider: 'IP GEOLOCATION',
+            isMock: false,
+            threatLevel: 'Safe',
+            timestamp: new Date().toISOString(),
+            source: 'ip_lookup',
+          };
+        }
       }
     } catch (err) {
-      console.log('[LocationService] freeipapi failed, falling back to backend live location:', err);
+      console.log('[LocationService] freeipapi notice, trying backend current API:', err);
     }
 
-    // Attempt 3: Query backend /current API fallback
+    // Attempt 3: Query backend /api/v1/geolocation/current API
     try {
       const backendRes = await GeolocationRepository.getCurrentLocation();
-      if (backendRes?.data) {
+      if (backendRes?.data && typeof backendRes.data.latitude === 'number') {
         const d = backendRes.data;
-        const lat = parseFloat(d.latitude) || 12.9716;
-        const lon = parseFloat(d.longitude) || 77.5946;
+        const lat = d.latitude;
+        const lon = d.longitude;
         return {
           latitude: lat,
           longitude: lon,
           latitudeStr: `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'}`,
           longitudeStr: `${Math.abs(lon).toFixed(4)}° ${lon >= 0 ? 'E' : 'W'}`,
           accuracy: d.accuracy || 15,
-          city: d.city || 'Bengaluru',
-          region: 'Karnataka',
-          country: d.country || 'India',
-          countryCode: 'IN',
-          isp: d.provider || 'Mobile GPS Gateway',
+          city: d.city || `GPS Node (${Math.abs(lat).toFixed(2)}°)`,
+          region: d.region || '',
+          country: d.country || 'Detected Region',
+          countryCode: '',
+          isp: d.isp || d.provider || 'Mobile GPS Gateway',
           ip: d.ip || '127.0.0.1',
           provider: 'CELLULAR / GPS',
           isMock: Boolean(d.is_mock_location),
@@ -315,29 +382,11 @@ class LocationService {
       }
     } catch {}
 
-    // Default safe coordinates (Bengaluru tech hub)
-    return {
-      latitude: 12.9716,
-      longitude: 77.5946,
-      latitudeStr: '12.9716° N',
-      longitudeStr: '77.5946° E',
-      accuracy: 25,
-      city: 'Bengaluru',
-      region: 'Karnataka',
-      country: 'India',
-      countryCode: 'IN',
-      isp: 'Cellular / Wi-Fi Provider',
-      ip: '127.0.0.1',
-      provider: 'NETWORK CELLULAR',
-      isMock: false,
-      threatLevel: 'Safe',
-      timestamp: new Date().toISOString(),
-      source: 'network',
-    };
+    throw new Error('Unable to determine location. Please enable GPS permissions.');
   }
 
   /**
-   * Syncs user live location to backend server database
+   * Syncs user live location to backend server database via POST /api/v1/geolocation/current
    */
   private async syncWithBackend(loc: UserLiveLocation): Promise<void> {
     try {
@@ -347,9 +396,14 @@ class LocationService {
         ip: loc.ip,
         is_mock_location: loc.isMock,
         accuracy: loc.accuracy,
-        provider: loc.provider.toLowerCase(),
+        provider: (loc.provider || 'gps').toLowerCase(),
         timestamp: loc.timestamp,
-        device_id: 'active_device',
+        device_id: 'primary_phone',
+        platform: Platform.OS,
+        city: loc.city,
+        country: loc.country,
+        address: `${loc.latitudeStr}, ${loc.longitudeStr}`,
+        isp: loc.isp,
       });
     } catch (e) {
       console.log('[LocationService] Non-critical sync error:', e);
@@ -358,3 +412,4 @@ class LocationService {
 }
 
 export const locationService = new LocationService();
+

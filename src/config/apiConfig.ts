@@ -25,7 +25,7 @@ const getHostFromExpo = (): string | null => {
 
 export const PRODUCTION_URL = 'https://aepttas-backend.onrender.com';
 const expoIp = getHostFromExpo();
-export const DEFAULT_HOST = expoIp || '127.0.0.1';
+export const DEFAULT_HOST = expoIp || '192.168.28.93';
 const CANDIDATE_HOSTS = [PRODUCTION_URL];
 const DEFAULT_PORT = '5000';
 
@@ -49,35 +49,36 @@ export const setResolvedHost = (url: string) => {
 
 const getLocalBaseUrl = (port: number): string => {
   if (customBaseUrl) return customBaseUrl;
-  return `http://127.0.0.1:${port}`;
+  return `http://${DEFAULT_HOST}:${port}`;
 };
 
 export const getParentalBaseUrl = (): string => {
-  return getLocalBaseUrl(8005);
+  return getLocalBaseUrl(5000);
 };
 
 export const getApiBaseUrl = (): string => {
-  return getLocalBaseUrl(8005);
+  return getLocalBaseUrl(5000);
 };
 
 export const getMalwareBaseUrl = (): string => {
-  return getLocalBaseUrl(8001);
+  return getLocalBaseUrl(5000);
 };
 
 export const getAuthBaseUrl = (): string => {
-  return getLocalBaseUrl(8002);
+  return getLocalBaseUrl(5000);
 };
 
 export const getGeoBaseUrl = (): string => {
-  return getLocalBaseUrl(8003);
+  // Port 5000 is the Unified Backend hosting /api/v1/geolocation/*
+  return getLocalBaseUrl(5000);
 };
 
 export const getVulnBaseUrl = (): string => {
-  return getLocalBaseUrl(8000);
+  return getLocalBaseUrl(5000);
 };
 
 export const getCallerBaseUrl = (): string => {
-  return getLocalBaseUrl(8004);
+  return getLocalBaseUrl(5000);
 };
 
 export const setApiBaseUrl = (url: string) => {

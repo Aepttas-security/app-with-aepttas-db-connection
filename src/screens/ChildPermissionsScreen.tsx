@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,12 +7,16 @@ import {
   TouchableOpacity,
   StatusBar,
   ScrollView,
+  Platform,
+  PermissionsAndroid,
+  AppState,
 } from 'react-native';
 import { useAppTheme } from '../contexts/ThemeContext';
 import { Icon } from '../components/Icon';
 import { Storage } from '../utils/storage';
 import { ParentalRepository } from '../data/parentalRepository';
 import { ChildDaemon } from '../services/childDaemon';
+import { UsageStatsBridge } from '../native/usageStats';
 
 interface ChildPermissionsScreenProps {
   onBack: () => void;
@@ -29,6 +33,74 @@ export const ChildPermissionsScreen: React.FC<ChildPermissionsScreenProps> = ({
   const [gpsTracking, setGpsTracking] = useState(false);
   const [usageLogs, setUsageLogs] = useState(false);
   const [proxyFilters, setProxyFilters] = useState(false);
+
+  // Check live system permissions on mount & whenever returning to foreground
+  const checkLivePermissions = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const usageGranted = await UsageStatsBridge.checkUsagePermission();
+        setUsageLogs(usageGranted);
+
+        const fineLocGranted = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
+        setGpsTracking(fineLocGranted);
+      } catch (e) {
+        console.warn('[Permissions] Check error:', e);
+      }
+    }
+  };
+
+  useEffect(() => {
+    checkLivePermissions();
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        checkLivePermissions();
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  const handleToggleUsage = async (targetValue: boolean) => {
+    if (targetValue) {
+      const isGranted = await UsageStatsBridge.checkUsagePermission();
+      if (!isGranted) {
+        await UsageStatsBridge.requestUsagePermission();
+      } else {
+        setUsageLogs(true);
+      }
+    } else {
+      setUsageLogs(false);
+    }
+  };
+
+  const handleToggleGps = async (targetValue: boolean) => {
+    if (targetValue && Platform.OS === 'android') {
+      try {
+        const res = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+        ]);
+        const granted =
+          res[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] ===
+          PermissionsAndroid.RESULTS.GRANTED;
+        setGpsTracking(granted);
+
+        // Also request background location on Android 10+ if fine location granted
+        if (granted && Platform.Version >= 29) {
+          try {
+            await PermissionsAndroid.request(
+              PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION
+            );
+          } catch {}
+        }
+      } catch {
+        setGpsTracking(false);
+      }
+    } else {
+      setGpsTracking(targetValue);
+    }
+  };
 
   const allPermissionsGranted = gpsTracking && usageLogs && proxyFilters;
 
@@ -78,7 +150,7 @@ export const ChildPermissionsScreen: React.FC<ChildPermissionsScreenProps> = ({
           </View>
           <Switch
             value={gpsTracking}
-            onValueChange={setGpsTracking}
+            onValueChange={handleToggleGps}
             trackColor={{ false: colors.border, true: '#E50914' }}
             thumbColor="#ffffff"
           />
@@ -95,11 +167,21 @@ export const ChildPermissionsScreen: React.FC<ChildPermissionsScreenProps> = ({
               <Text style={styles.permissionDesc}>
                 Tracks app statistics, active screen time, and enforces app lockout rules.
               </Text>
+              {Platform.OS === 'android' && !usageLogs && (
+                <TouchableOpacity
+                  onPress={() => UsageStatsBridge.showRestrictedSettingsGuide()}
+                  style={{ marginTop: 6 }}
+                >
+                  <Text style={{ color: colors.cyanAccent, fontSize: 12, fontWeight: '600' }}>
+                    Tap if Android shows "Restricted setting" (Android 13/14)
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
           <Switch
             value={usageLogs}
-            onValueChange={setUsageLogs}
+            onValueChange={handleToggleUsage}
             trackColor={{ false: colors.border, true: '#E50914' }}
             thumbColor="#ffffff"
           />
